@@ -18,18 +18,6 @@ BOOK_TO_SCRAP = "Micromégas"
 WITH_SUBTITLES = True
 
 
-##def remove_dups(file):
-##    uniques = set()
-##    with open(file, "r", encoding="utf8") as f:
-##        for link in tqdm.tqdm(f.readlines()):
-##            url = urllib.parse.quote(link)
-##            page, _ = get_source(url)
-##            uniques.add('/'.join(page.split('/')[4:]).strip())
-##    with open(file, 'w+') as f:
-##        for item in uniques:
-##            print(item)
-##            f.write("https://fr.wikisource.org/wiki/%s\n" % item)
-
 def get_content_page(url):
 
     res = urllib.request.urlopen(url)
