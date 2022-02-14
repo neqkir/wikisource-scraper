@@ -111,8 +111,11 @@ def clean_title(title):
         title = title[:title.index(sub_str)-2]
 
     # remove book title
-    if(title.find(BOOK_TO_SCRAP) > -1) :
-        title = title[title.index(BOOK_TO_SCRAP)+len(BOOK_TO_SCRAP):]
+    sub_str = BOOK_TO_SCRAP.replace("_"," ")
+    if(title.find(sub_str) > -1) :
+        title = title[title.index(sub_str)+len(sub_str):]
+
+    title.replace("/","").replace("\\","").replace("-","")
     
     return title
     
