@@ -9,24 +9,32 @@ from bs4 import BeautifulSoup
 import requests
 import tqdm
 
-LANGUAGE = "en"
+############# MANDATORY INPUTS
 
+# Wikisource book to scrap
 BOOK_TO_SCRAP = "Micromégas"
 # Other examples
 BOOK_TO_SCRAP = "Merchant_of_Venice_(1923)_Yale"
-#BOOK_TO_SCRAP = "Poésies_(Mallarmé,_1914,_8e_éd.)"
+BOOK_TO_SCRAP = "Poésies_(Mallarmé,_1914,_8e_éd.)"
 
-WITH_SUBTITLES = True
+# And its language
+LANGUAGE = "fr"
+#LANGUAGE = "en"
+
+###################################################
 
 # Exlude specific pages (page name starting with)
 EXCLUDE = ["Appendix", "Index", "Bibliography", "Notes" ]
 
+# With parts titles or not (acts, chapters, etc.)
+WITH_SUBTITLES = True
+
+# Remove foot notes
 NO_FOOT_NOTES = True
 
+###################################################
 
 def get_content_page(url):
-
-    print(url)
 
     res = urllib.request.urlopen(url)
     wiki = BeautifulSoup(res, "lxml")
@@ -64,14 +72,20 @@ def get_book_urls(url_title):
     req = urllib.request.urlopen(url)
     wiki = BeautifulSoup(req, "lxml")
 
-    for link in wiki.find(id="bodyContent").findAll('a'):
+    url_title = url_title.replace("%28","(").replace("%29",")").replace("%2C",",")
 
-        # exclude everything non wikisource text page
+    # screen over all weblinks
         
-        excl1 = link['href'].find("/wiki/"+url_title) 
-        excl2 = link['href'].find("/wiki/"+BOOK_TO_SCRAP)
+    for e in wiki.find(id="bodyContent").findAll('a'):
 
-        if excl1 == -1 and excl2 == -1:
+        # keep if has a class 'href'
+
+        if e.has_attr('href') == 0 :
+             continue
+
+        # keep wiki pages
+            
+        if e['href'].find("/wiki/"+url_title) == -1 : 
             continue
 
         # exclude pages corresponding to elements in EXCLUDE
@@ -79,24 +93,28 @@ def get_book_urls(url_title):
         # e.g, if EXCLUDE = ["appendix", "notes"] for https://en.wikisource.org/wiki/Merchant_of_Venice_(1923)_Yale
         # it will exclude pages whose name (after /wiki/Merchant_of_Venice_(1923)_Yale/) starts with appendix or notes
         
+        exclude_list = ["/wiki/" + url_title.lower() + "/" + i.lower() for i in EXCLUDE]
 
-        exclude_list = ["/wiki/" + url_title.lower() + "/" + i.lower() for i in EXCLUDE]+\
-                       ["/wiki/" + BOOK_TO_SCRAP.lower() + "/" + i.lower() for i in EXCLUDE]
-
-        if any(elem in link['href'].lower() for elem in exclude_list):
+        if any(elem in e['href'].lower() for elem in exclude_list):
             continue
 
-        #print(str(link.get('href')))         
-        pages.append("https://" + LANGUAGE + ".wikisource.org/" + str(link['href']))
-
-    #print(pages)
+        pages.append("https://" + LANGUAGE + ".wikisource.org/" + str(e['href']))
         
     return pages
     
 
+def clean_title(title):
+
+    # cut after Wikisource 
+    sub_str = "Wikisource"
+    title = title[:title.index(sub_str)]
     
+    return title
+    
+
 def get_book(url_title):
-    
+
+
     content = ""
     url = "https://" + LANGUAGE + ".wikisource.org/wiki/" + url_title
     req = urllib.request.urlopen(url)
@@ -117,7 +135,7 @@ def get_book(url_title):
         page_title, page_content = get_content_page(url) 
 
         if WITH_SUBTITLES:
-            content += "\n" + page_title + "\n"
+            content += "\n" + clean_title (page_title) + "\n"
 
         content += page_content + " "
         pbar.set_description("Processing %s" % url.split('/')[-2])
@@ -140,8 +158,6 @@ def save_to_file(text, title):
 
 
 if __name__ == "__main__":
-
-    url_title = urllib.parse.quote(BOOK_TO_SCRAP)
-    titre, livre = get_book(url_title)
+    titre, livre = get_book(urllib.parse.quote(BOOK_TO_SCRAP))
     save_to_file(livre, titre)
 
