@@ -107,7 +107,12 @@ def clean_title(title):
 
     # cut after Wikisource 
     sub_str = "Wikisource"
-    title = title[:title.index(sub_str)]
+    if(title.find(sub_str) > -1) :
+        title = title[:title.index(sub_str)-2]
+
+    # remove book title
+    if(title.find(BOOK_TO_SCRAP) > -1) :
+        title = title[title.index(BOOK_TO_SCRAP)+len(BOOK_TO_SCRAP):]
     
     return title
     
