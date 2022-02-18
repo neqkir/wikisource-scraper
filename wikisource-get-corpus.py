@@ -36,7 +36,7 @@ LANGUAGE = "fr"
 ###################################################
 
 # Exlude specific pages (page name starting with)
-EXCLUDE = ["Appendix", "Index", "Bibliography", "Bibliographie", "Notes" ]
+EXCLUDE = ["Appendix", "Index", "Bibliography", "Bibliographie", "Notes", "Texte_entier" ]
 # With parts titles or not (acts, chapters, etc.)
 WITH_SUBTITLES = True
 # Remove foot notes
@@ -72,7 +72,7 @@ def get_content_page(url):
 
 
 
-def get_book_urls(url_title):
+def get_book_urls(url_title, language):
     '''
     For a given wikisource book, e.g.,
     https://en.wikisource.org/wiki/Merchant_of_Venice_(1923)_Yale
@@ -81,7 +81,7 @@ def get_book_urls(url_title):
     
     pages = []
 
-    url = "https://" + LANGUAGE + ".wikisource.org/wiki/" + url_title
+    url = "https://" + language + ".wikisource.org/wiki/" + url_title
     req = urllib.request.urlopen(url)
     wiki = BeautifulSoup(req, "lxml")
 
@@ -116,7 +116,7 @@ def get_book_urls(url_title):
     return pages
     
 
-def clean_sub_title(subtitle):
+def clean_sub_title(subtitle, title):
 
     # cut after Wikisource 
     sub_str = "Wikisource"
@@ -124,15 +124,17 @@ def clean_sub_title(subtitle):
         subtitle = subtitle[:subtitle.index(sub_str)-2]
 
     # remove book title
-    sub_str = BOOK_TO_SCRAP.replace("_"," ")
+    sub_str = title.replace("_"," ")
     if(subtitle.find(sub_str) > -1) :
         subtitle = subtitle[subtitle.index(sub_str)+len(sub_str):]
 
     subtitle = re.sub('[/\-*#]', '', subtitle)
 
     subtitle = subtitle.strip()
+    print(subtitle)
     
     return subtitle
+
 
 def clean_title(title):
 
@@ -146,12 +148,32 @@ def clean_title(title):
     title = title.strip()
     
     return title
-    
 
-def get_book(url_title):
+
+def clean_content(content, page_title):
+    '''
+    Unfortunately you'll have to work a little bit !
+    Write in this function specific code to clean your specific text.
+    '''
+    rem_substr = "Pour les autres éditions de ce texte, voir " + page_title + " (Mallarmé)."
+
+    if(content.find(rem_substr) > -1) :
+        content = content[content.index(rem_substr)+len(rem_substr):]
+
+    rem_substr = "Pour les autres éditions de ce texte, voir " + page_title + "."
+
+    if(content.find(rem_substr) > -1) :
+        content = content[content.index(rem_substr)+len(rem_substr):]
+
+    ## Add stuff to remove non-text
+
+    return content
+
+
+def get_book(url_title, language):
 
     content = ""
-    url = "https://" + LANGUAGE + ".wikisource.org/wiki/" + url_title
+    url = "https://" + language + ".wikisource.org/wiki/" + url_title
     req = urllib.request.urlopen(url)
     wiki = BeautifulSoup(req, "lxml")
 
@@ -162,15 +184,19 @@ def get_book(url_title):
 
     # Get all urls (for parts, chapters, acts etc.)
 
-    urls = get_book_urls(url_title)
+    urls = get_book_urls(url_title, language)
     pbar = tqdm.tqdm(urls)
 
     for url in pbar:
-        
-        page_title, page_content = get_content_page(url) 
+            
+        page_title, page_content = get_content_page(url)
+
+        page_title = clean_sub_title(page_title, title)
 
         if WITH_SUBTITLES:
-            content += "\n" + clean_sub_title(page_title) + "\n"
+            content += "\n" + page_title + "\n"
+            
+        page_content = clean_content(page_content, page_title)     
 
         content += page_content + " "
         pbar.set_description("Processing %s" % url.split('/')[-2])
@@ -205,10 +231,19 @@ if __name__ == "__main__":
         print("no corpus provided, we'll just load one ...")
         lines = [BOOK_TO_SCRAP+";;"+LANGUAGE]
 
+    books = ""
     for line in lines:
-        BOOK_TO_SCRAP, LANGUAGE = line.strip().split(";;") 
-        titre, livre = get_book(urllib.parse.quote(BOOK_TO_SCRAP))
+        book_to_scrap, language = line.strip().split(";;") 
+        title, book = get_book(urllib.parse.quote(book_to_scrap), language)
+        
         if SINGLE_FILE:
-            save_to_file(livre, TITLE_ALL)
-        else:
-            save_to_file(livre, titre)
+            books += book + "\n"
+        else: 
+            save_to_file(book, title)
+
+    if SINGLE_FILE:
+            save_to_file(books, TITLE_ALL)
+
+        
+
+
