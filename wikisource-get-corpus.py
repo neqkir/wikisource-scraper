@@ -26,6 +26,7 @@ BOOK_TO_SCRAP = "Micromégas"
 # Other examples
 BOOK_TO_SCRAP = "Merchant_of_Venice_(1923)_Yale"
 BOOK_TO_SCRAP = "Poésies_(Mallarmé,_1914,_8e_éd.)"
+BOOK_TO_SCRAP = "Divagations_(1897)"
 
 # And its language
 LANGUAGE = "fr"
@@ -34,13 +35,14 @@ LANGUAGE = "fr"
 ###################################################
 
 # Exlude specific pages (page name starting with)
-EXCLUDE = ["Appendix", "Index", "Bibliography", "Notes" ]
-
+EXCLUDE = ["Appendix", "Index", "Bibliography", "Bibliographie", "Notes" ]
 # With parts titles or not (acts, chapters, etc.)
 WITH_SUBTITLES = True
-
 # Remove foot notes
 NO_FOOT_NOTES = True
+# Save all to a single file
+SINGLE_FILE = True
+TITLE_ALL = "mallarme"
 
 ###################################################
 
@@ -126,13 +128,11 @@ def clean_title(title):
         title = title[title.index(sub_str)+len(sub_str):]
 
     title = re.sub('[/\-]', '', title)
-    #title.replace("/","").replace("\\","").replace("-","")
     
     return title
     
 
 def get_book(url_title):
-
 
     content = ""
     url = "https://" + LANGUAGE + ".wikisource.org/wiki/" + url_title
@@ -142,6 +142,7 @@ def get_book(url_title):
     # Get book title
     
     title = wiki.title.string
+    print("loading " + title + " ...")
 
     # Get all urls (for parts, chapters, acts etc.)
 
@@ -157,7 +158,7 @@ def get_book(url_title):
 
         content += page_content + " "
         pbar.set_description("Processing %s" % url.split('/')[-2])
-        
+
     return title, content
 
 
@@ -191,8 +192,14 @@ if __name__ == "__main__":
     for line in lines:
         BOOK_TO_SCRAP, LANGUAGE = line.strip().split(";;") 
         titre, livre = get_book(urllib.parse.quote(BOOK_TO_SCRAP))
-        print(title)
-        save_to_file(livre, titre)
+        if SINGLE_FILE:
+            save_to_file(livre, TITLE_ALL)
+        else:
+            save_to_file(livre, titre)
+
+        
+
+
 
 
 
