@@ -26,6 +26,7 @@ BOOK_TO_SCRAP = "Micromégas"
 # Other examples
 BOOK_TO_SCRAP = "Merchant_of_Venice_(1923)_Yale"
 BOOK_TO_SCRAP = "Poésies_(Mallarmé,_1914,_8e_éd.)"
+BOOK_TO_SCRAP = "Micromégas"
 BOOK_TO_SCRAP = "Divagations_(1897)"
 
 # And its language
@@ -115,6 +116,24 @@ def get_book_urls(url_title):
     return pages
     
 
+def clean_sub_title(subtitle):
+
+    # cut after Wikisource 
+    sub_str = "Wikisource"
+    if(subtitle.find(sub_str) > -1) :
+        subtitle = subtitle[:subtitle.index(sub_str)-2]
+
+    # remove book title
+    sub_str = BOOK_TO_SCRAP.replace("_"," ")
+    if(subtitle.find(sub_str) > -1) :
+        subtitle = subtitle[subtitle.index(sub_str)+len(sub_str):]
+
+    subtitle = re.sub('[/\-*#]', '', subtitle)
+
+    subtitle = subtitle.strip()
+    
+    return subtitle
+
 def clean_title(title):
 
     # cut after Wikisource 
@@ -122,12 +141,9 @@ def clean_title(title):
     if(title.find(sub_str) > -1) :
         title = title[:title.index(sub_str)-2]
 
-    # remove book title
-    sub_str = BOOK_TO_SCRAP.replace("_"," ")
-    if(title.find(sub_str) > -1) :
-        title = title[title.index(sub_str)+len(sub_str):]
+    title = re.sub('[/\-*#]', '', title)
 
-    title = re.sub('[/\-]', '', title)
+    title = title.strip()
     
     return title
     
@@ -141,7 +157,7 @@ def get_book(url_title):
 
     # Get book title
     
-    title = wiki.title.string
+    title = clean_title(wiki.title.string)
     print("loading " + title + " ...")
 
     # Get all urls (for parts, chapters, acts etc.)
@@ -154,7 +170,7 @@ def get_book(url_title):
         page_title, page_content = get_content_page(url) 
 
         if WITH_SUBTITLES:
-            content += "\n" + clean_title (page_title) + "\n"
+            content += "\n" + clean_sub_title(page_title) + "\n"
 
         content += page_content + " "
         pbar.set_description("Processing %s" % url.split('/')[-2])
@@ -196,10 +212,3 @@ if __name__ == "__main__":
             save_to_file(livre, TITLE_ALL)
         else:
             save_to_file(livre, titre)
-
-        
-
-
-
-
-
