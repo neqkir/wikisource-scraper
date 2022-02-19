@@ -185,21 +185,35 @@ def get_book(url_title, language):
     # Get all urls (for parts, chapters, acts etc.)
 
     urls = get_book_urls(url_title, language)
-    pbar = tqdm.tqdm(urls)
 
-    for url in pbar:
-            
+    if not urls:
+
+        # this is already the page with text
+
         page_title, page_content = get_content_page(url)
-
-        page_title = clean_sub_title(page_title, title)
-
-        if WITH_SUBTITLES:
-            content += "\n" + page_title + "\n"
-            
-        page_content = clean_content(page_content, page_title)     
-
+        content += "\n" + title + "\n"
+        page_content = clean_content(page_content, title)
         content += page_content + " "
-        pbar.set_description("Processing %s" % url.split('/')[-2])
+
+    else:
+
+        # the page is calling more pages
+
+        pbar = tqdm.tqdm(urls)
+
+        for url in pbar:
+            
+            page_title, page_content = get_content_page(url)
+
+            page_title = clean_sub_title(page_title, title)
+
+            if WITH_SUBTITLES:
+                content += "\n" + page_title + "\n"
+            
+            page_content = clean_content(page_content, page_title)     
+
+            content += page_content + " "
+            pbar.set_description("Processing %s" % url.split('/')[-2])
 
     return title, content
 
